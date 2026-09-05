@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "example_mod",
+  "version": "${version}",
+  "name": "Example Mod",
+  "description": "Example Mod Test",
+  "authors": [
+    "me"
+  ],
+  "license": "CC0-1.0",
+  "environment": "client",
+  "mixins": [
+    "example_mod.mixins.json"
+  ],
+  "depends": {
+    "minecraft": "1.0.0-beta.7.3",
+    "java": ">=8"
+  }
+}
