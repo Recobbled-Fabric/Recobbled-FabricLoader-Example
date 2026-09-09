@@ -31,6 +31,12 @@ unimined {
     minecraft {
         version 'b1.7.3'
         side "client"
+        mods {
+            modImplementation {
+                // you can do this is mods have the wrong access widener mapping, but it may break runs
+                catchAWNamespaceAssertion()
+            }
+        }
 
         mappings {
             retroMCP("b1.7")
@@ -42,7 +48,7 @@ unimined {
                     c(name, path, path)
                 }
 
-                jarClasses('custom_jar/modloader-recobbled-1.6.jar').each(mapClass)
+                jarClasses('custom_jar/ModLoaderRecobbled-1.1.1.jar').each(mapClass)
                 jarClasses('custom_jar/recobbled-1.6_03.jar').each(mapClass)
             }
         }
@@ -62,8 +68,7 @@ unimined {
 
 dependencies {
     jarMod name: "recobbled", version: "1.6_03"
-    jarMod name: "modloader-recobbled", version: "1.6"
-    modImplementation name: "ModLoaderFixer", version: "1.2"
+    modImplementation name: "ModLoaderRecobbled", version: "1.1.1"
 }
 
 processResources {

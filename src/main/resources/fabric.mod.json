@@ -12,6 +12,11 @@
   "mixins": [
     "example_mod.mixins.json"
   ],
+  "entrypoints": {
+    "modloader_recobbled:base_mod": [
+      "example.mod.ExampleMod"
+    ]
+  },
   "depends": {
     "minecraft": "1.0.0-beta.7.3",
     "java": ">=8"
