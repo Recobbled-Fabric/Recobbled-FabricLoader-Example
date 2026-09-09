@@ -19,7 +19,6 @@ public class ExampleMod extends BaseMod {
         System.out.println("[ExampleMod] Initializing");
         readCustomLang();
         exampleBlock = new ExampleBlock(exampleId).setBlockName("smiles");
-        exampleBlock.blockIndexInTexture = ModLoader.addOverride("/gui/items.png", "/assets/example_mod/textures/smile.png");
     }
 
     @Override
