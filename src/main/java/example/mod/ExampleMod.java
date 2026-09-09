@@ -13,12 +13,14 @@ public class ExampleMod extends BaseMod {
     @MLProp(name="Example Block's ID")
     public static int exampleId = 255;
 
-    Block exampleBlock;
+    static Block exampleBlock;
 
     public ExampleMod() {
         System.out.println("[ExampleMod] Initializing");
         readCustomLang();
         exampleBlock = new ExampleBlock(exampleId).setBlockName("smiles");
+        ModLoader.RegisterBlock(exampleBlock);
+
     }
 
     @Override
@@ -27,7 +29,7 @@ public class ExampleMod extends BaseMod {
     }
 
     //There will be api for reading custom lang file soon, this is placeholder for now
-    public void readCustomLang() {
+    private static void readCustomLang() {
         try {
             Properties prop = new Properties();
             prop.load(new InputStreamReader(ExampleMod.class.getResourceAsStream("/assets/example_mod/lang/en_US.lang")));
