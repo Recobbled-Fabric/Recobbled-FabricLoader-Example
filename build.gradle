@@ -16,6 +16,9 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 8
 }
 
+import xyz.wagyourtail.unimined.internal.minecraft.MinecraftProvider
+
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -48,16 +51,30 @@ unimined {
                     c(name, path, path)
                 }
 
-                jarClasses('custom_jar/ModLoaderRecobbled-1.1.2.jar').each(mapClass)
-                jarClasses('custom_jar/recobbled-1.6_03.jar').each(mapClass)
+                jarClasses(file('custom_jar/ModLoaderRecobbled-1.2.1.jar')).each(mapClass)
+                jarClasses(file('custom_jar/recobbled-1.6_03.jar')).each(mapClass)
             }
         }
 
         MinecraftProvider minecraftProvider = delegate as MinecraftProvider
 
+        runs {
+            config("client") {
+                javaVersion = JavaVersion.VERSION_1_8
+                jvmArgs "-Dfabric.gameVersion=${mc.version}",
+                        "-Dfabric.runtimeMappingNamespace=named"
+            }
+        }
+
+
         merged {
-            customPatcher(new FabricWithoutIntermediary(project, minecraftProvider)) {
-                it.loader '0.19.5'
+            fabric {
+                loader '0.19.5'
+                if(hasAccessWidener())
+                    accessWidener(project.file("src/main/resources/" + project.property('access_widener')))
+                customIntermediaries = true
+                prodNamespace "official"
+                devMappings = null
             }
             jarMod {
                 enableJarModAgent = false
@@ -68,7 +85,7 @@ unimined {
 
 dependencies {
     jarMod name: "recobbled", version: "1.6_03"
-    modImplementation name: "ModLoaderRecobbled", version: "1.1.2"
+    modImplementation name: "ModLoaderRecobbled", version: "1.2.1"
 }
 
 processResources {
@@ -79,48 +96,76 @@ processResources {
     }
 }
 
-import xyz.wagyourtail.unimined.api.minecraft.task.RemapJarTask
-import xyz.wagyourtail.unimined.internal.minecraft.patch.fabric.OfficialFabricMinecraftTransformer
-import xyz.wagyourtail.unimined.api.runs.RunConfig
-import xyz.wagyourtail.unimined.internal.minecraft.MinecraftProvider
-
 tasks.withType(RemapJarTask).configureEach {
     mixinRemap {
         enableBaseMixin()
         enableMixinExtra()
     }
+
+    doLast {
+        if(hasAccessWidener())
+            fixAccessWidener(archiveFile.get().asFile, temporaryDir)
+    }
 }
 
-def jarClasses(String jarPath) {
-    def file = file(jarPath)
-    def zip = new java.util.zip.ZipFile(file)
-    def names = []
-    zip.entries().each { entry ->
-        if (entry.name.endsWith('.class') && !entry.name.contains('/')) {
-            def name = entry.name - '.class'
-            if (name.size() > 2) names << name
+def hasAccessWidener() {
+    return project.hasProperty('access_widener') && project.access_widener.length() > 0
+}
+
+import xyz.wagyourtail.unimined.api.minecraft.task.RemapJarTask
+
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
+
+def fixAccessWidener(File jarFile, File temporaryDir) {
+    def tempFile = new File(temporaryDir, jarFile.name + ".tmp")
+    def awPath = project.property('access_widener')
+    def input = new ZipFile(jarFile)
+    def output = new ZipOutputStream(new FileOutputStream(tempFile))
+    try {
+        input.entries().each { entry ->
+            def bytes = input.getInputStream(entry).bytes
+            if (entry.name == awPath) {
+                def text = new String(bytes, "UTF-8")
+                text = text.replaceFirst("intermediary","official")
+                bytes = text.getBytes("UTF-8")
+            }
+            def newEntry = new ZipEntry(entry.name)
+            newEntry.time = entry.time
+            newEntry.method = entry.method
+            output.putNextEntry(newEntry)
+            output.write(bytes)
+            output.closeEntry()
         }
+    } finally {
+        output.close()
+        input.close()
     }
-    zip.close()
-    return names
+    if (!jarFile.delete()) {
+        throw new GradleException("Could not replace remapped jar: ${jarFile}")
+    }
+    if (!tempFile.renameTo(jarFile)) {
+        throw new GradleException("Could not rename temporary jar to: ${jarFile}")
+    }
 }
 
-class FabricWithoutIntermediary extends OfficialFabricMinecraftTransformer{
+def jarClasses(File file) {
+    def zip = new ZipFile(file)
+    def names = []
 
-    FabricWithoutIntermediary(Project project, MinecraftProvider provider) {
-        super(project, provider)
-        prodNamespace("official")
-        customIntermediaries = true
+    try {
+        zip.entries().each { entry ->
+            if (entry.name.endsWith('.class') && !entry.name.contains('/')) {
+                def name = entry.name - '.class'
+                if (name.size() > 2) {
+                    names << name
+                }
+            }
+        }
+    } finally {
+        zip.close()
     }
 
-    @Override
-    void applyRunTransform(RunConfig config) {
-        super.applyRunTransform(config)
-        config.jvmArgs("-Dfabric.gameVersion=${provider.version}")
-    }
-
-    @Override
-    java.nio.file.Path getDevMappings() {
-        return null;
-    }
+    return names
 }
