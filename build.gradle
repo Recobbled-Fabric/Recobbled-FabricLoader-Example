@@ -34,6 +34,12 @@ unimined {
     minecraft {
         version 'b1.7.3'
         side "client"
+        mods {
+            modImplementation {
+                // you can do this is mods have the wrong access widener mapping, but it may break runs
+                catchAWNamespaceAssertion()
+            }
+        }
 
         mappings {
             retroMCP("b1.7")
