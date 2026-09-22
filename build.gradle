@@ -56,7 +56,7 @@ unimined {
             }
         }
 
-        MinecraftProvider minecraftProvider = delegate as MinecraftProvider
+        MinecraftProvider mc = delegate as MinecraftProvider
 
         runs {
             config("client") {
