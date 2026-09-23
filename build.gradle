@@ -63,15 +63,13 @@ unimined {
         runs {
             config("client") {
                 javaVersion = JavaVersion.VERSION_1_8
-                jvmArgs "-Dfabric.gameVersion=${mc.version}",
-                        "-Dfabric.runtimeMappingNamespace=named"
+                jvmArgs "-Dfabric.gameVersion=${mc.version}", "-Dfabric.runtimeMappingNamespace=named"
             }
         }
 
-
         merged {
             fabric {
-                loader '0.19.5'
+                loader project.property('fabric_loader')
                 if(hasAccessWidener())
                     accessWidener(project.file("src/main/resources/" + project.property('access_widener')))
                 customIntermediaries = true
