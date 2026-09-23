@@ -1,6 +1,16 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+    dependencies {
+        classpath 'com.github.FarnGitHub:Unimined-AccessWidener-Fixer:master-SNAPSHOT'
+    }
+}
+
 plugins {
     id 'java'
-    id 'xyz.wagyourtail.unimined' version '1.4.2-SNAPSHOT'
+    id 'xyz.wagyourtail.unimined' version "1.4.2-SNAPSHOT"
 }
 
 group = project.property('group')
@@ -18,11 +28,9 @@ tasks.withType(JavaCompile).configureEach {
 
 import xyz.wagyourtail.unimined.internal.minecraft.MinecraftProvider
 
-
 repositories {
     mavenLocal()
     mavenCentral()
-    unimined.modrinthMaven()
     flatDir {
         dirs 'custom_jar'
     }
@@ -34,12 +42,6 @@ unimined {
     minecraft {
         version 'b1.7.3'
         side "client"
-        mods {
-            modImplementation {
-                // you can do this is mods have the wrong access widener mapping, but it may break runs
-                catchAWNamespaceAssertion()
-            }
-        }
 
         mappings {
             retroMCP("b1.7")
@@ -101,11 +103,6 @@ tasks.withType(RemapJarTask).configureEach {
         enableBaseMixin()
         enableMixinExtra()
     }
-
-    doLast {
-        if(hasAccessWidener())
-            fixAccessWidener(archiveFile.get().asFile, temporaryDir)
-    }
 }
 
 def hasAccessWidener() {
@@ -114,41 +111,7 @@ def hasAccessWidener() {
 
 import xyz.wagyourtail.unimined.api.minecraft.task.RemapJarTask
 
-import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-import java.util.zip.ZipOutputStream
-
-def fixAccessWidener(File jarFile, File temporaryDir) {
-    def tempFile = new File(temporaryDir, jarFile.name + ".tmp")
-    def awPath = project.property('access_widener')
-    def input = new ZipFile(jarFile)
-    def output = new ZipOutputStream(new FileOutputStream(tempFile))
-    try {
-        input.entries().each { entry ->
-            def bytes = input.getInputStream(entry).bytes
-            if (entry.name == awPath) {
-                def text = new String(bytes, "UTF-8")
-                text = text.replaceFirst("intermediary","official")
-                bytes = text.getBytes("UTF-8")
-            }
-            def newEntry = new ZipEntry(entry.name)
-            newEntry.time = entry.time
-            newEntry.method = entry.method
-            output.putNextEntry(newEntry)
-            output.write(bytes)
-            output.closeEntry()
-        }
-    } finally {
-        output.close()
-        input.close()
-    }
-    if (!jarFile.delete()) {
-        throw new GradleException("Could not replace remapped jar: ${jarFile}")
-    }
-    if (!tempFile.renameTo(jarFile)) {
-        throw new GradleException("Could not rename temporary jar to: ${jarFile}")
-    }
-}
 
 def jarClasses(File file) {
     def zip = new ZipFile(file)
